@@ -1,0 +1,481 @@
+/* Drawline.java */
+package com.example.mydrawlinetestlab;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+
+import androidx.annotation.Nullable;
+
+public class DrawLine extends View {
+    private Canvas canvas;
+    private Paint pLine,pBg;
+    private Path touchPath;
+    private Bitmap bitmap;
+
+    public DrawLine(Context context) {
+        super(context);
+    }
+
+    public DrawLine(Context context, @Nullable AttributeSet attrs) {
+        super(context, attrs);
+        pBg = new Paint();
+        pBg.setColor(Color.WHITE);
+        pLine = new Paint();
+        pLine.setColor(Color.BLACK);
+        pLine.setStyle(Paint.Style.STROKE);
+        pLine.setStrokeWidth(12);
+        touchPath = new Path();
+    }
+
+    public DrawLine(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+    }
+
+    public DrawLine(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float touchX = event.getX();
+        float touchY = event.getY();
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                touchPath.moveTo(touchX,touchY);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                touchPath.lineTo(touchX,touchY);
+                break;
+            case MotionEvent.ACTION_UP:
+                touchPath.lineTo(touchX,touchY);
+                canvas.drawPath(touchPath,pLine);
+                touchPath = new Path();
+                break;
+            default:
+                return false;
+        }
+        invalidate();
+        return true;
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        bitmap = Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);
+        canvas = new Canvas(bitmap);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        canvas.drawBitmap(bitmap,0,0,pBg);
+        canvas.drawPath(touchPath,pLine);
+    }
+    public void changeColor(String s){
+        if (s == getResources().getString(R.string.red)) {
+            pLine.setColor(Color.RED);
+        }
+        if (s == getResources().getString(R.string.deepBlue)){
+            pLine.setColor(Color.BLUE);
+        }
+    }
+    public void setLineStroke(int i){
+        pLine.setStrokeWidth(i);
+    }
+    public void clearCanvas(){
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.SRC);
+    }
+}
+
+/* Drawline - MainActivity */
+package com.example.mydrawlinetestlab;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
+import android.content.Context;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+    private DrawLine drawLine;
+    private Toolbar toolbar;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        drawLine = (DrawLine) findViewById(R.id.drawLine);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.option_menu,menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    private void showAlertDialog(){
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        ConstraintLayout layout = (ConstraintLayout) inflater.inflate(R.layout.custom_dialogbox,null);
+        TextView textView = (TextView) layout.findViewById(R.id.textView);
+        SeekBar seekBar = (SeekBar) layout.findViewById(R.id.seekBar);
+        new AlertDialog.Builder(this).setTitle("Line Thickness").setView(layout).setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Toast.makeText(MainActivity.this,"You clicked cancel button.",Toast.LENGTH_SHORT).show();
+            }
+        }).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                float value = seekBar.getProgress();
+                drawLine.setLineStroke((int)value);
+                Toast.makeText(MainActivity.this,"You clicked ok button.",Toast.LENGTH_SHORT).show();
+            }
+        }).show();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if(item.getTitle() == getResources().getString(R.string.softYellow)){
+            drawLine.setBackgroundColor(getColor(R.color.softYellow));
+        }
+        if(item.getTitle() == getResources().getString(R.string.softBlue)){
+            drawLine.setBackgroundColor(getColor(R.color.softblue));
+        }
+        if(item.getTitle() == getResources().getString(R.string.softGreen)){
+            drawLine.setBackgroundColor(getColor(R.color.softgreen));
+        }
+        if(item.getTitle() == getResources().getString(R.string.red)){
+            drawLine.changeColor(getResources().getString(R.string.red));
+        }
+        if(item.getTitle() == getResources().getString(R.string.deepBlue)){
+            drawLine.changeColor(getResources().getString(R.string.deepBlue));
+        }
+        if(item.getTitle() == getResources().getString(R.string.lineThickness)){
+            showAlertDialog();
+        }
+        if(item.getTitle() == getResources().getString(R.string.clear)){
+            drawLine.clearCanvas();
+        }
+        
+        return super.onOptionsItemSelected(item);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+package com.example.studentdatabasewithroom;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+
+import java.util.ArrayList;
+
+public class MainActivity extends AppCompatActivity {
+    EditText editTextMkpt,editTextName,editTextYear,editTextGpa;
+    Button button;
+    RecyclerView recyclerView;
+    StudentViewModel studentViewModel;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        editTextMkpt = (EditText) findViewById(R.id.editTextMKPT);
+        editTextName = (EditText) findViewById(R.id.editTextName);
+        editTextYear = (EditText) findViewById(R.id.editTextYear);
+        editTextGpa = (EditText) findViewById(R.id.editTextGPA);
+        button = (Button) findViewById(R.id.buttonSave);
+
+        recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        studentViewModel = new ViewModelProvider(this).get(StudentViewModel.class);
+
+        studentViewModel.getAllStudent().observe(this,students->{
+            if(students!=null && !students.isEmpty()){
+                final StudentListAdapter adapter = new StudentListAdapter(ArrayList<Student>(students));
+                recyclerView.setAdapter(adapter);
+            }
+        });
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Student student = new Student(editTextMkpt.getText().toString(),editTextName.getText().toString(),editTextYear.getText().toString(),editTextGpa.getText().toString());
+                studentViewModel.insert(student);
+            }
+        });
+    }
+}
+
+package com.example.studentdatabasewithroom;
+
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "student_table")
+public class Student {
+
+    @PrimaryKey
+    @NonNull
+    @ColumnInfo(name = "mkpt")
+    private String mkpt;
+    @NonNull
+    @ColumnInfo(name = "name")
+    private String name;
+    @NonNull
+    @ColumnInfo(name = "year")
+    private String year;
+    @ColumnInfo(name = "gpa")
+    private String gpa;
+
+    public Student(@NonNull String mkpt, @NonNull String name, @NonNull String year, String gpa) {
+        this.mkpt = mkpt;
+        this.name = name;
+        this.year = year;
+        this.gpa = gpa;
+    }
+
+    @NonNull
+    public String getMkpt() {
+        return mkpt;
+    }
+
+    public void setMkpt(@NonNull String mkpt) {
+        this.mkpt = mkpt;
+    }
+
+    @NonNull
+    public String getName() {
+        return name;
+    }
+
+    public void setName(@NonNull String name) {
+        this.name = name;
+    }
+
+    @NonNull
+    public String getYear() {
+        return year;
+    }
+
+    public void setYear(@NonNull String year) {
+        this.year = year;
+    }
+
+    public String getGpa() {
+        return gpa;
+    }
+
+    public void setGpa(String gpa) {
+        this.gpa = gpa;
+    }
+}
+
+@Entity(tableName="student_table")
+public class Student {
+    @NonNull
+    @PrimaryKey
+    @ColumnInfo(name="abcd")
+    String name;
+
+    public Student(@NonNull String name) {
+        this.name = name;
+    }
+
+    // getter and setters
+}
+
+package com.example.studentdatabasewithroom;
+
+import androidx.lifecycle.LiveData;
+import androidx.room.Dao;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.Query;
+
+import java.util.List;
+
+@Dao
+public interface StudentDao {
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void insert(Student student);
+
+    @Query("SELECT * FROM student_table")
+    LiveData<List<Student>> getAllStudents();
+}
+
+package com.example.studentdatabasewithroom;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+
+public class StudentListAdapter extends RecyclerView.Adapter<StudentListAdapter.StudentViewHolder> {
+    ArrayList<Student> listStudent;
+
+    public StudentListAdapter(ArrayList<Student> listStudent) {
+        this.listStudent = listStudent;
+    }
+
+    @NonNull
+    @Override
+    public StudentViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        View v = (View) inflater.inflate(R.layout.student_item,parent,false);
+        return new StudentViewHolder(v);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull StudentViewHolder holder, int position) {
+        //Student s = listStudent.get(position);
+        holder.textViewMkpt.setText(listStudent.get(position).getMkpt());
+        holder.textViewName.setText(listStudent.get(position).getName());
+        holder.textViewYear.setText(listStudent.get(position).getYear());
+        holder.textViewGpa.setText(listStudent.get(position).getGpa());
+    }
+
+    @Override
+    public int getItemCount() {
+        return listStudent.size();
+    }
+
+    class StudentViewHolder extends RecyclerView.ViewHolder{
+        TextView textViewMkpt;
+        TextView textViewName;
+        TextView textViewYear;
+        TextView textViewGpa;
+
+        public StudentViewHolder(@NonNull View itemView) {
+            super(itemView);
+            textViewMkpt = (TextView) itemView.findViewById(R.id.textViewMKPT);
+            textViewName = (TextView) itemView.findViewById(R.id.textViewName);
+            textViewYear = (TextView) itemView.findViewById(R.id.textViewYear);
+            textViewGpa = (TextView) itemView.findViewById(R.id.textViewGPA);
+        }
+    }
+}
+
+package com.example.studentdatabasewithroom;
+
+import android.app.Application;
+
+import androidx.lifecycle.LiveData;
+
+import java.util.List;
+
+public class StudentRepository {
+    private StudentDao studentDao;
+    private LiveData<List<Student>> listStudent;
+    StudentRepository(Application application){
+        StudentRoomDatabase studentDb = StudentRoomDatabase.getDatabase(application);
+        studentDao = studentDb.studentDao();
+        listStudent = studentDao.getAllStudents();
+    }
+    LiveData<List<Student>> getAllStudent(){
+        return listStudent;
+    }
+    void insert(Student student){
+        StudentRoomDatabase.databaseWriteExecutor.execute(()->{
+            studentDao.insert(student);
+        });
+    }
+}
+
+package com.example.studentdatabasewithroom;
+
+import android.content.Context;
+
+import androidx.room.Database;
+import androidx.room.Room;
+import androidx.room.RoomDatabase;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+@Database(entities = {Student.class}, version = 1, exportSchema = false)
+public abstract class StudentRoomDatabase extends RoomDatabase {
+
+    public abstract StudentDao studentDao();
+    private static volatile StudentRoomDatabase INSTANCE;
+    private static final int NUMBER_OF_THREADS = 4;
+
+    static final ExecutorService databaseWriteExecutor =
+            Executors.newFixedThreadPool(NUMBER_OF_THREADS);
+    static StudentRoomDatabase getDatabase(final Context context){
+        if (INSTANCE == null) {
+            synchronized (StudentRoomDatabase.class) {
+                    INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
+                                    StudentRoomDatabase.class, "student_database")
+
+                            .build();
+            }
+        }
+        return INSTANCE;
+
+    }
+}
+
+package com.example.studentdatabasewithroom;
+
+import android.app.Application;
+
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+
+import java.util.List;
+
+public class StudentViewModel extends AndroidViewModel {
+    private StudentRepository studentRepository;
+    private final LiveData<List<Student>> listStudent;
+
+    public StudentViewModel(@NonNull Application application) {
+        super(application);
+        studentRepository = new StudentRepository(application);
+        listStudent = studentRepository.getAllStudents();
+    }
+
+    LiveData<List<Student>> getAllStudents() {
+        return listStudent;
+    }
+
+    void insert(Student student){
+        studentRepository.insert(student);
+    }
+}
+
